@@ -16,11 +16,12 @@ module Agents
 
     event_description <<-MD
       Events look like this:
-        {
-          "value": xxxx,
-            ...
-          "crypto": "XTZ"
-        }
+
+          {
+            "value": xxxx,
+              ...
+            "crypto": "XTZ"
+          }
     MD
 
     def default_options
