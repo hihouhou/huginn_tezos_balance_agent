@@ -62,37 +62,25 @@ module Agents
 
     def handle(wallet)
 
+      uri = URI.parse("https://api.tzkt.io/v1/accounts/#{wallet}/balance")
+      response = Net::HTTP.get_response(uri)
+      
+      log response.code
 
-        uri = URI.parse("https://api.tzstats.com/explorer/account/#{wallet}?")
-        request = Net::HTTP::Get.new(uri)
-        request["Authority"] = "api.tzstats.com"
-        request["Cache-Control"] = "max-age=0"
-        request["Upgrade-Insecure-Requests"] = "1"
-        
-        req_options = {
-          use_ssl: uri.scheme == "https",
-        }
+      payload = JSON.parse(response.body)
+      event = { 'crypto' => "XTZ", 'address' => wallet, 'value' => "#{payload}" }
 
-        response = Net::HTTP.start(uri.hostname, uri.port, req_options) do |http|
-          http.request(request)
+      if interpolated['changes_only'] == 'true'
+        if payload != memory['last_status']
+          create_event payload: event
+          memory['last_status'] = payload
         end
-        
-        log response.code
-
-        parsed_json = JSON.parse(response.body)
-        payload = { 'crypto' => "XTZ", 'address' => parsed_json["address"], 'value' => parsed_json["total_balance"] }
-
-        if interpolated['changes_only'] == 'true'
-          if payload.to_s != memory['last_status']
-            memory['last_status'] = payload.to_s
-            create_event payload: payload
-          end
-        else
-          create_event payload: payload
-          if payload.to_s != memory['last_status']
-            memory['last_status'] = payload.to_s
-          end
+      else
+        create_event payload: event
+        if payload != memory['last_status']
+          memory['last_status'] = payload
         end
+      end
     end
   end
 end
